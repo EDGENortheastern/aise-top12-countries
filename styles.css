@@ -24,6 +24,17 @@ h1 {
     font-style: italic;
 }
 
+.tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid black;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
 #chart {
     max-width: 900px;
     margin: 0 auto;
@@ -31,4 +42,25 @@ h1 {
     border-radius: 8px;
     padding: 1.5rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:root {
+    --orange-1: #f58552;
+    --orange-2: #e46225;
+    --orange-3: #d74b19;
+
+
+    --yellow-1: #fec54c;
+    --yellow-2: #fdb737;
+    --yellow-3: #e2a854;
+
+
+    --green-1: #609f80;
+    --green-2: #045944;
+    --green-3: #1b4538;
+
+
+    --blue-1: #62b6d0;
+    --blue-2: #2d7496;
+    --blue-3: #0d3353;
 }
