@@ -1,4 +1,7 @@
-const API_URL = "https://restcountries.com/v3.1/all?fields=name,population";
+// REST Countries v5 requires an API key: sign up at https://restcountries.com/sign-up
+const API_KEY = "rc_live_f75e913fd7604dee8801bf304a1d4344";
+const API_URL = "https://api.restcountries.com/countries/v5";
+const PAGE_LIMIT = 100; // v5 maximum per request
 
 const svgWidth = 800;
 const svgHeight = 500;
@@ -17,9 +20,30 @@ const svg = d3.select('#chart')
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
+const statusEl = document.getElementById('status');
+
+// v5 has no sort parameter and caps results at 100, so page through every country.
+async function fetchAllCountries() {
+    const countries = [];
+    let offset = 0;
+    let more = true;
+    while (more) {
+        const url = `${API_URL}?response_fields=names.common,population&limit=${PAGE_LIMIT}&offset=${offset}`;
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` } });
+        const body = await res.json();
+        if (!res.ok || !body.data) {
+            const msg = body.errors?.[0]?.message ?? `HTTP ${res.status}`;
+            throw new Error(msg);
+        }
+        countries.push(...body.data.objects);
+        more = body.data.meta.more;
+        offset += PAGE_LIMIT;
+    }
+    return countries;
+}
+
 async function loadData() {
-    const res = await fetch(API_URL);
-    const countries = await res.json();
+    const countries = await fetchAllCountries();
 
     const top12 = countries
         .filter(d => d.population)
@@ -34,7 +58,7 @@ async function loadData() {
     ];
 
     const xScale = d3.scaleBand()
-        .domain(top12.map(d => d.name.common))
+        .domain(top12.map(d => d.names.common))
         .range([0, width])
         .padding(0.2);
 
@@ -47,7 +71,7 @@ async function loadData() {
     svg.selectAll("rect")
         .data(top12)
         .join("rect")
-        .attr("x", d => xScale(d.name.common))
+        .attr("x", d => xScale(d.names.common))
         .attr("y", d => yScale(d.population))
         .attr("width", xScale.bandwidth())
         .attr("height", d => height - yScale(d.population))
@@ -55,7 +79,7 @@ async function loadData() {
         .style("stroke", "black")
         .on("mouseover", (_event, d) => {
             tooltip
-                .html(`<strong>${d.name.common}</strong><br>${d.population.toLocaleString()}`)
+                .html(`<strong>${d.names.common}</strong><br>${d.population.toLocaleString()}`)
                 .style("opacity", 1);
         })
         .on("mousemove", (event) => {
@@ -97,6 +121,11 @@ async function loadData() {
         .attr("y", -margin.left + 15)
         .attr("text-anchor", "middle")
         .text("Population");
+
+    statusEl.textContent = "";
 }
 
-loadData();
+loadData().catch(err => {
+    console.error(err);
+    statusEl.textContent = `Could not load data: ${err.message}`;
+});
